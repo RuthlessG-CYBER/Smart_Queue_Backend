@@ -1,0 +1,90 @@
+import express from "express";
+import {
+  register,
+  login,
+  totalDoctors,
+  totalUsers,
+  totalAppointments,
+} from "../controllers/userController.js";
+import {
+  createClinic,
+  getAllClinics,
+  getSingleClinic,
+} from "../controllers/clinicController.js";
+import {
+  createDoctor,
+  getAllDoctors,
+  getDoctorById,
+  getDataFromUserId,
+} from "../controllers/doctorController.js";
+import {
+  bookAppointment,
+  getAppointmentsByPatient,
+  getDoctorLiveQueue,
+  startAppointmentConsultation,
+  endAppointmentConsultation,
+  cancelPatientAppointment,
+  getQueueLength,
+  getDoctorCurrentConsultation,
+  sendConsultationLink,
+} from "../controllers/appointmentController.js";
+import {
+  createPrescription,
+  getPrescriptionByAppointment,
+  downloadPrescriptionPdf,
+} from "../controllers/prescriptionController.js";
+import { getPatientNotifications } from "../controllers/notificationController.js";
+
+const router = express.Router();
+
+// register
+router.post("/auth/register", register);
+
+// login
+router.post("/auth/login", login);
+
+// clinic routes
+router.post("/clinics", createClinic);
+router.get("/clinics", getAllClinics);
+router.get("/clinic/:id", getSingleClinic);
+
+// doctor routes
+router.post("/doctors", createDoctor);
+router.get("/doctors", getAllDoctors);
+router.get("/:id", getDoctorById);
+router.get("/doctors/data/:id", getDataFromUserId);
+
+// patient routes
+router.get("/patient/:patientId", getAppointmentsByPatient);
+
+// appointment routes
+router.post("/book", bookAppointment);
+router.get("/doctor/:doctorId/queue/live", getDoctorLiveQueue);
+router.patch("/:appointmentId/start", startAppointmentConsultation);
+router.patch("/:appointmentId/end", endAppointmentConsultation);
+router.patch("/:appointmentId/cancel", cancelPatientAppointment);
+router.get("/:appointmentId/prescription", getPrescriptionByAppointment);
+router.get(
+  "/doctor/:doctorId/current-consultation",
+  getDoctorCurrentConsultation
+);
+router.post(
+  "/appointment/:appointmentId/send-consultation-link",
+  sendConsultationLink
+);
+
+router.get("/doctor/:doctorId/queue-length", getQueueLength);
+
+// dashboard routes
+router.get("/doctors/count", totalDoctors);
+router.get("/users/count", totalUsers);
+router.get("/appointments/count", totalAppointments);
+
+// prescription routes
+router.post("/prescription/:appointmentId", createPrescription);
+router.get("/:appointmentId/prescription/pdf", downloadPrescriptionPdf);
+
+// notification routes
+router.get("/patient/:patientId/notifications", getPatientNotifications);
+
+export default router;
