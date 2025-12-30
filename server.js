@@ -12,7 +12,6 @@ dotenv.config();
 const app = express();
 
 app.use(express.json());
-
 app.use(
   cors({
     origin: "*",
@@ -48,13 +47,15 @@ app.use("/v1/api", router);
 
 const PORT = process.env.PORT || 8080;
 
-const startServer = async () => {
-  await connectDB();
-  await initRedis();
+server.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+});
 
-  server.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
-  });
-};
-
-startServer();
+(async () => {
+  try {
+    await connectDB();
+    await initRedis();
+  } catch (err) {
+    console.error("Startup error:", err.message);
+  }
+})();
