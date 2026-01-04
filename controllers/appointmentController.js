@@ -37,6 +37,7 @@ export const bookAppointment = async (req, res) => {
       type,
       status: "waiting",
     });
+    
 
     await redisClient.rPush(queueKey, appointment._id.toString());
 

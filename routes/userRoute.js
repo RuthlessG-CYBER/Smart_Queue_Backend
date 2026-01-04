@@ -16,6 +16,9 @@ import {
   getAllDoctors,
   getDoctorById,
   getDataFromUserId,
+  deleteDoctor,
+  getDataUserId,
+  updateDoctor
 } from "../controllers/doctorController.js";
 import {
   bookAppointment,
@@ -53,6 +56,10 @@ router.post("/doctors", createDoctor);
 router.get("/doctors", getAllDoctors);
 router.get("/:id", getDoctorById);
 router.get("/doctors/data/:id", getDataFromUserId);
+router.delete("/doctor/delete/:id", deleteDoctor);
+router.get("/doctors/multipledata/:id", getDataUserId);
+router.patch("/doctors/update/:id", updateDoctor);
+
 
 // patient routes
 router.get("/patient/:patientId", getAppointmentsByPatient);
@@ -64,14 +71,8 @@ router.patch("/:appointmentId/start", startAppointmentConsultation);
 router.patch("/:appointmentId/end", endAppointmentConsultation);
 router.patch("/:appointmentId/cancel", cancelPatientAppointment);
 router.get("/:appointmentId/prescription", getPrescriptionByAppointment);
-router.get(
-  "/doctor/:doctorId/current-consultation",
-  getDoctorCurrentConsultation
-);
-router.post(
-  "/appointment/:appointmentId/send-consultation-link",
-  sendConsultationLink
-);
+router.get("/doctor/:doctorId/current-consultation",getDoctorCurrentConsultation);
+router.post("/appointment/:appointmentId/send-consultation-link",sendConsultationLink);
 
 router.get("/doctor/:doctorId/queue-length", getQueueLength);
 
