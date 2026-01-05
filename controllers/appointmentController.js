@@ -24,32 +24,70 @@ export const bookAppointment = async (req, res) => {
       type,
     } = req.body;
 
-    const queueKey = `queue:${doctorId}`;
-    const queueLength = await redisClient.lLen(queueKey);
+    if (
+      !patientId ||
+      !doctorId ||
+      !clinicId ||
+      !appointmentDate ||
+      !slotStartTime ||
+      !slotEndTime ||
+      !type
+    ) {
+      return res.status(400).json({ message: "Missing required fields" });
+    }
+
+    const date = new Date(appointmentDate);
+    const startOfDay = new Date(date.setHours(0, 0, 0, 0));
+    const endOfDay = new Date(date.setHours(23, 59, 59, 999));
+
+    const existingAppointment = await Appointment.findOne({
+      patientId,
+      doctorId,
+      appointmentDate: { $gte: startOfDay, $lte: endOfDay },
+      status: { $in: ["waiting", "in_consultation"] },
+    });
+
+    if (existingAppointment) {
+      return res.status(400).json({
+        message:
+          "You already have an active appointment with this doctor on the selected date",
+      });
+    }
+
+    const queueKey = `queue:${doctorId}:${startOfDay.toISOString()}`;
+
+    const queueNumber = await redisClient.rPush(
+      queueKey,
+      new mongoose.Types.ObjectId().toString()
+    );
 
     const appointment = await Appointment.create({
       patientId,
       doctorId,
       clinicId,
-      appointmentDate,
+      appointmentDate: startOfDay,
       slotStartTime,
       slotEndTime,
-      queueNumber: queueLength + 1,
+      queueNumber,
       type,
       status: "waiting",
     });
-    
 
-    await redisClient.rPush(queueKey, appointment._id.toString());
-
-    const eta = await calculateAppointmentETA(
-      doctorId,
-      appointment.queueNumber
+    await redisClient.lSet(
+      queueKey,
+      queueNumber - 1,
+      appointment._id.toString()
     );
+
+    const eta = await calculateAppointmentETA(doctorId, queueNumber);
+
     appointment.estimatedStartTime = eta;
     await appointment.save();
 
-    req.io.to(`doctor:${doctorId}`).emit("queue_updated");
+    req.io.to(`doctor:${doctorId}`).emit("queue_updated", {
+      doctorId,
+      appointmentDate: startOfDay,
+    });
 
     res.status(201).json({
       message: "Appointment booked successfully",
