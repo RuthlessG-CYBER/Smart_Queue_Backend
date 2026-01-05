@@ -116,7 +116,7 @@ export const getDoctorCurrentConsultation = async (req, res) => {
         appointment: null,
       });
     }
-
+    
     res.status(200).json({
       message: "Active consultation found",
       appointment,
