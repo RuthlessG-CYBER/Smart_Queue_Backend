@@ -1,6 +1,7 @@
 import Appointment from "../models/appointmentModel.js";
 import Doctor from "../models/doctorModel.js";
 import redisClient from "../config/redis.js";
+import mongoose from "mongoose";
 
 
 
@@ -63,10 +64,25 @@ export const bookAppointment = async (req, res) => {
 export const getDoctorCurrentConsultation = async (req, res) => {
   try {
     const { doctorId } = req.params;
-    const queueKey = `queue:${doctorId}`;
-    const appointmentId = await redisClient.lIndex(queueKey, 0);
-    const appointment = await Appointment.findById(appointmentId);
-    res.json(appointment);
+
+    const appointment = await Appointment.findOne({
+      doctorId: new mongoose.Types.ObjectId(doctorId),
+      status: "in_consultation",
+    })
+      .populate("patientId", "name phone")
+      .populate("clinicId", "name address");
+
+    if (!appointment) {
+      return res.status(200).json({
+        message: "No active consultation",
+        appointment: null,
+      });
+    }
+
+    res.status(200).json({
+      message: "Active consultation found",
+      appointment,
+    });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
