@@ -4,7 +4,6 @@ import redisClient from "../config/redis.js";
 import mongoose from "mongoose";
 
 
-
 export const calculateAppointmentETA = async (doctorId, queueNumber) => {
   const doctor = await Doctor.findById(doctorId);
   const minutes =
@@ -24,70 +23,43 @@ export const bookAppointment = async (req, res) => {
       type,
     } = req.body;
 
-    if (
-      !patientId ||
-      !doctorId ||
-      !clinicId ||
-      !appointmentDate ||
-      !slotStartTime ||
-      !slotEndTime ||
-      !type
-    ) {
-      return res.status(400).json({ message: "Missing required fields" });
-    }
-
-    const date = new Date(appointmentDate);
-    const startOfDay = new Date(date.setHours(0, 0, 0, 0));
-    const endOfDay = new Date(date.setHours(23, 59, 59, 999));
-
-    const existingAppointment = await Appointment.findOne({
-      patientId,
-      doctorId,
-      appointmentDate: { $gte: startOfDay, $lte: endOfDay },
-      status: { $in: ["waiting", "in_consultation"] },
-    });
-
-    if (existingAppointment) {
-      return res.status(400).json({
-        message:
-          "You already have an active appointment with this doctor on the selected date",
-      });
-    }
-
-    const queueKey = `queue:${doctorId}:${startOfDay.toISOString()}`;
-
-    const queueNumber = await redisClient.rPush(
-      queueKey,
-      new mongoose.Types.ObjectId().toString()
-    );
+    const queueKey = `queue:${doctorId}`;
+    const queueLength = await redisClient.lLen(queueKey);
 
     const appointment = await Appointment.create({
       patientId,
       doctorId,
       clinicId,
-      appointmentDate: startOfDay,
+      appointmentDate,
       slotStartTime,
       slotEndTime,
-      queueNumber,
+      queueNumber: queueLength + 1,
       type,
       status: "waiting",
     });
+    
+    const existingAppointment = await Appointment.find({
+      doctorId,
+      appointmentDate,
+      status: { $in: ["waiting", "in_consultation"] },
+    });
+    
+    if(existingAppointment.length > 0) {
+      return res.status(400).json({
+        message: "You can only have one appointment per day",
+      });
+    }
 
-    await redisClient.lSet(
-      queueKey,
-      queueNumber - 1,
-      appointment._id.toString()
+    await redisClient.rPush(queueKey, appointment._id.toString());
+
+    const eta = await calculateAppointmentETA(
+      doctorId,
+      appointment.queueNumber
     );
-
-    const eta = await calculateAppointmentETA(doctorId, queueNumber);
-
     appointment.estimatedStartTime = eta;
     await appointment.save();
 
-    req.io.to(`doctor:${doctorId}`).emit("queue_updated", {
-      doctorId,
-      appointmentDate: startOfDay,
-    });
+    req.io.to(`doctor:${doctorId}`).emit("queue_updated");
 
     res.status(201).json({
       message: "Appointment booked successfully",
@@ -97,7 +69,6 @@ export const bookAppointment = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
-
 
 export const getDoctorCurrentConsultation = async (req, res) => {
   try {
