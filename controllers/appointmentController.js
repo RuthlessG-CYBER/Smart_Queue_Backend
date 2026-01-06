@@ -3,7 +3,6 @@ import Doctor from "../models/doctorModel.js";
 import redisClient from "../config/redis.js";
 import mongoose from "mongoose";
 
-
 export const calculateAppointmentETA = async (doctorId, queueNumber) => {
   const doctor = await Doctor.findById(doctorId);
   const minutes =
@@ -23,6 +22,19 @@ export const bookAppointment = async (req, res) => {
       type,
     } = req.body;
 
+    const existingAppointment = await Appointment.findOne({
+      patientId,
+      doctorId,
+      status: { $in: ["waiting", "in_consultation", "confirmed"] },
+    });
+
+    if (existingAppointment) {
+      return res.status(409).json({
+        message: "You already have an active appointment with this doctor",
+        appointmentId: existingAppointment._id,
+      });
+    }
+
     const queueKey = `queue:${doctorId}`;
     const queueLength = await redisClient.lLen(queueKey);
 
@@ -37,18 +49,6 @@ export const bookAppointment = async (req, res) => {
       type,
       status: "waiting",
     });
-    
-    const existingAppointment = await Appointment.find({
-      doctorId,
-      appointmentDate,
-      status: { $in: ["waiting", "in_consultation"] },
-    });
-    
-    if(existingAppointment.length > 0) {
-      return res.status(400).json({
-        message: "You can only have one appointment per day",
-      });
-    }
 
     await redisClient.rPush(queueKey, appointment._id.toString());
 
@@ -56,6 +56,7 @@ export const bookAppointment = async (req, res) => {
       doctorId,
       appointment.queueNumber
     );
+
     appointment.estimatedStartTime = eta;
     await appointment.save();
 
@@ -69,6 +70,7 @@ export const bookAppointment = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
+
 
 export const getDoctorCurrentConsultation = async (req, res) => {
   try {
@@ -87,7 +89,7 @@ export const getDoctorCurrentConsultation = async (req, res) => {
         appointment: null,
       });
     }
-    
+
     res.status(200).json({
       message: "Active consultation found",
       appointment,
@@ -96,7 +98,6 @@ export const getDoctorCurrentConsultation = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
-
 
 export const getQueueLength = async (req, res) => {
   try {
@@ -108,7 +109,6 @@ export const getQueueLength = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
-
 
 export const getAppointmentsByPatient = async (req, res) => {
   try {
@@ -217,37 +217,37 @@ export const getDoctorLiveQueue = async (req, res) => {
 
 export const sendConsultationLink = async (req, res) => {
   try {
-    const { appointmentId } = req.params
-    const { link } = req.body
+    const { appointmentId } = req.params;
+    const { link } = req.body;
 
     if (!appointmentId || !link) {
       return res.status(400).json({
         message: "appointmentId and link are required",
-      })
+      });
     }
 
-    const appointment = await Appointment.findById(appointmentId)
+    const appointment = await Appointment.findById(appointmentId);
 
     if (!appointment) {
       return res.status(404).json({
         message: "Appointment not found",
-      })
+      });
     }
 
-    appointment.link = link
-    appointment.status = "in_consultation"
-    appointment.actualStartTime = new Date()
+    appointment.link = link;
+    appointment.status = "in_consultation";
+    appointment.actualStartTime = new Date();
 
-    await appointment.save()
+    await appointment.save();
 
     res.status(200).json({
       message: "Consultation link sent to patient",
       appointmentId: appointment._id,
       link: appointment.link,
-    })
+    });
   } catch (error) {
     res.status(500).json({
       message: error.message,
-    })
+    });
   }
-}
+};
