@@ -10,6 +10,7 @@ import {
   createClinic,
   getAllClinics,
   getSingleClinic,
+  deleteClinic,
 } from "../controllers/clinicController.js";
 import {
   createDoctor,
@@ -50,6 +51,7 @@ router.post("/auth/login", login);
 router.post("/clinics", createClinic);
 router.get("/clinics", getAllClinics);
 router.get("/clinic/:id", getSingleClinic);
+router.delete("/clinic/delete/:id", deleteClinic);
 
 // doctor routes
 router.post("/doctors", createDoctor);

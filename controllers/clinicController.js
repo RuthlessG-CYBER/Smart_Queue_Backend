@@ -36,4 +36,16 @@ export const getSingleClinic = async (req, res) => {
     } catch (error) {
         res.status(500).json({ message: error.message });
     }
-}
+};
+
+export const deleteClinic = async (req, res) => {
+    try {
+        const clinic = await Clinic.findByIdAndDelete(req.params.id);
+        if (!clinic) return res.status(404).json({ message: "Clinic not found" });
+        res.json({
+            message: "Clinic deleted successfully"
+        });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
