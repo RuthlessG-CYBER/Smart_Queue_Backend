@@ -10,66 +10,6 @@ export const calculateAppointmentETA = async (doctorId, queueNumber) => {
   return new Date(Date.now() + minutes * 60000);
 };
 
-export const bookAppointment = async (req, res) => {
-  try {
-    const {
-      patientId,
-      doctorId,
-      clinicId,
-      appointmentDate,
-      slotStartTime,
-      slotEndTime,
-      type,
-    } = req.body;
-
-    const existingAppointment = await Appointment.findOne({
-      patientId,
-      doctorId,
-      status: { $in: ["waiting", "in_consultation", "confirmed"] },
-    });
-
-    if (existingAppointment) {
-      return res.status(409).json({
-        message: "You already have an active appointment with this doctor",
-        appointmentId: existingAppointment._id,
-      });
-    }
-
-    const queueKey = `queue:${doctorId}`;
-    const queueLength = await redisClient.lLen(queueKey);
-
-    const appointment = await Appointment.create({
-      patientId,
-      doctorId,
-      clinicId,
-      appointmentDate,
-      slotStartTime,
-      slotEndTime,
-      queueNumber: queueLength + 1,
-      type,
-      status: "waiting",
-    });
-
-    await redisClient.rPush(queueKey, appointment._id.toString());
-
-    const eta = await calculateAppointmentETA(
-      doctorId,
-      appointment.queueNumber
-    );
-
-    appointment.estimatedStartTime = eta;
-    await appointment.save();
-
-    req.io.to(`doctor:${doctorId}`).emit("queue_updated");
-
-    res.status(201).json({
-      message: "Appointment booked successfully",
-      appointment,
-    });
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
-};
 
 
 export const getDoctorCurrentConsultation = async (req, res) => {

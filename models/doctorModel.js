@@ -76,6 +76,10 @@ const doctorSchema = new mongoose.Schema(
       type: Number,
       default: 50,
     },
+    consultationFee: {
+      type: Number,
+      default: 0,
+    },
     rating: {
       type: Number,
       default: 0,

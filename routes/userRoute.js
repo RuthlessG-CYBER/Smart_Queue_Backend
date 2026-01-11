@@ -22,7 +22,7 @@ import {
   updateDoctor
 } from "../controllers/doctorController.js";
 import {
-  bookAppointment,
+  // bookAppointment,
   getAppointmentsByPatient,
   getDoctorLiveQueue,
   startAppointmentConsultation,
@@ -38,6 +38,9 @@ import {
   downloadPrescriptionPdf,
 } from "../controllers/prescriptionController.js";
 import { getPatientNotifications } from "../controllers/notificationController.js";
+import { createPaymentOrder, verifyPaymentAndBookAppointment } from "../controllers/razorpayController.js";
+
+
 
 const router = express.Router();
 
@@ -67,7 +70,7 @@ router.patch("/doctors/update/:id", updateDoctor);
 router.get("/patient/:patientId", getAppointmentsByPatient);
 
 // appointment routes
-router.post("/book", bookAppointment);
+// router.post("/book", bookAppointment);
 router.get("/doctor/:doctorId/queue/live", getDoctorLiveQueue);
 router.patch("/:appointmentId/start", startAppointmentConsultation);
 router.patch("/:appointmentId/end", endAppointmentConsultation);
@@ -77,6 +80,11 @@ router.get("/doctor/:doctorId/current-consultation",getDoctorCurrentConsultation
 router.post("/appointment/:appointmentId/send-consultation-link",sendConsultationLink);
 
 router.get("/doctor/:doctorId/queue-length", getQueueLength);
+
+// razorpay payment routes
+router.post("/payment/create-order", createPaymentOrder);
+router.post("/payment/verify", verifyPaymentAndBookAppointment);
+
 
 // dashboard routes
 router.get("/doctors/count", totalDoctors);
