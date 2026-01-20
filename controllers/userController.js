@@ -108,3 +108,43 @@ export const totalUsers = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
+
+export const addProfileImage = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const { profileImage } = req.body;
+
+    const user = await User.findByIdAndUpdate(
+      userId,
+      { profileImage },
+      { new: true }
+    );
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    res.json({
+      message: "Profile image updated successfully",
+      user,
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+export const getProfileImage = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+    res.json({
+      message: "Profile image fetched successfully",
+      profileImage: user.profileImage,
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};

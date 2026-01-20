@@ -11,10 +11,17 @@ export const createPrescription = async (req, res) => {
     if (!appointment)
       return res.status(404).json({ message: "Appointment not found" });
 
-    if (appointment.status !== "completed") {
+    if (appointment.status !== "in_consultation" && appointment.status !== "completed") {
       return res
         .status(400)
         .json({ message: "Consultation not completed yet" });
+    }
+
+    const existing = await Prescription.findOne({ appointmentId });
+    if (existing) {
+      return res.status(400).json({
+        message: "Prescription already exists for this appointment",
+      });
     }
 
     const prescription = await Prescription.create({
@@ -26,12 +33,10 @@ export const createPrescription = async (req, res) => {
       notes,
       followUpDate,
     });
-    req.io
-      .to(`patient:${appointment.patientId}`)
-      .emit("prescription_ready", {
-        appointmentId,
-        prescriptionId: prescription._id,
-      });
+    req.io.to(`patient:${appointment.patientId}`).emit("prescription_ready", {
+      appointmentId,
+      prescriptionId: prescription._id,
+    });
 
     res.status(201).json({
       message: "Prescription created successfully",
@@ -41,7 +46,6 @@ export const createPrescription = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
-
 
 export const getPrescriptionByAppointment = async (req, res) => {
   try {
@@ -96,9 +100,7 @@ export const downloadPrescriptionPdf = async (req, res) => {
     doc.moveDown();
 
     doc.text(`Patient: ${prescription.patientId.name}`);
-    doc.text(
-      `Date: ${new Date(prescription.createdAt).toDateString()}`
-    );
+    doc.text(`Date: ${new Date(prescription.createdAt).toDateString()}`);
     doc.moveDown();
 
     doc.fontSize(14).text("Diagnosis", { underline: true });
@@ -112,7 +114,9 @@ export const downloadPrescriptionPdf = async (req, res) => {
       doc
         .fontSize(12)
         .text(
-          `${index + 1}. ${med.name} — ${med.dosage}, ${med.frequency}, ${med.duration}`
+          `${index + 1}. ${med.name} — ${med.dosage}, ${med.frequency}, ${
+            med.duration
+          }`
         );
     });
 

@@ -5,6 +5,8 @@ import {
   totalDoctors,
   totalUsers,
   totalAppointments,
+  addProfileImage,
+  getProfileImage,
 } from "../controllers/userController.js";
 import {
   createClinic,
@@ -19,7 +21,7 @@ import {
   getDataFromUserId,
   deleteDoctor,
   getDataUserId,
-  updateDoctor
+  updateDoctor,
 } from "../controllers/doctorController.js";
 import {
   // bookAppointment,
@@ -38,9 +40,10 @@ import {
   downloadPrescriptionPdf,
 } from "../controllers/prescriptionController.js";
 import { getPatientNotifications } from "../controllers/notificationController.js";
-import { createPaymentOrder, verifyPaymentAndBookAppointment } from "../controllers/razorpayController.js";
-
-
+import {
+  createPaymentOrder,
+  verifyPaymentAndBookAppointment,
+} from "../controllers/razorpayController.js";
 
 const router = express.Router();
 
@@ -49,6 +52,10 @@ router.post("/auth/register", register);
 
 // login
 router.post("/auth/login", login);
+
+// add profile image
+router.patch("/profile-image/:userId", addProfileImage);
+router.get("/profile-logo/:userId", getProfileImage);
 
 // clinic routes
 router.post("/clinics", createClinic);
@@ -65,7 +72,6 @@ router.delete("/doctor/delete/:id", deleteDoctor);
 router.get("/doctors/multipledata/:id", getDataUserId);
 router.patch("/doctors/update/:id", updateDoctor);
 
-
 // patient routes
 router.get("/patient/:patientId", getAppointmentsByPatient);
 
@@ -76,15 +82,14 @@ router.patch("/:appointmentId/start", startAppointmentConsultation);
 router.patch("/:appointmentId/end", endAppointmentConsultation);
 router.patch("/:appointmentId/cancel", cancelPatientAppointment);
 router.get("/:appointmentId/prescription", getPrescriptionByAppointment);
-router.get("/doctor/:doctorId/current-consultation",getDoctorCurrentConsultation);
-router.post("/appointment/:appointmentId/send-consultation-link",sendConsultationLink);
+router.get("/doctor/:doctorId/current-consultation", getDoctorCurrentConsultation);
+router.post("/appointment/:appointmentId/send-consultation-link", sendConsultationLink);
 
 router.get("/doctor/:doctorId/queue-length", getQueueLength);
 
 // razorpay payment routes
 router.post("/payment/create-order", createPaymentOrder);
 router.post("/payment/verify", verifyPaymentAndBookAppointment);
-
 
 // dashboard routes
 router.get("/doctors/count", totalDoctors);

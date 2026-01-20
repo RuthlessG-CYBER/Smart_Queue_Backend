@@ -1,5 +1,6 @@
 import mongoose from "mongoose";
 
+
 const doctorSchema = new mongoose.Schema(
   {
     userId: {
@@ -19,6 +20,7 @@ const doctorSchema = new mongoose.Schema(
     phone: {
       type: String,
       required: true,
+      unique: true,
     },
     specialization: {
       type: String,
@@ -95,5 +97,6 @@ const doctorSchema = new mongoose.Schema(
   },
   { timestamps: true }
 );
+
 
 export default mongoose.model("Doctor", doctorSchema);

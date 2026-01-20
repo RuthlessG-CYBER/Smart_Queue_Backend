@@ -2,13 +2,69 @@ import Doctor from "../models/doctorModel.js";
 
 export const createDoctor = async (req, res) => {
   try {
-    const doctor = await Doctor.create(req.body);
-    res.status(201).json({
+    const {
+      userId,
+      name,
+      email,
+      phone,
+      specialization,
+      qualifications,
+      experienceYears,
+      clinicId,
+      schedule,
+      avgConsultationTime,
+      currentSpeedFactor,
+      isQueueActive,
+      currentPatientId,
+      supportsTeleconsultation,
+      maxPatientsPerDay,
+      consultationFee,
+      rating,
+      totalConsultations,
+      isActive,
+    } = req.body;
+
+    const existingDoctor = await Doctor.findOne({
+      userId,
+      clinicId,
+    });
+
+    if (existingDoctor) {
+      return res.status(409).json({
+        message: "Doctor already exists in this clinic",
+      });
+    }
+
+    const doctor = await Doctor.create({
+      userId,
+      name,
+      email,
+      phone,
+      specialization,
+      qualifications,
+      experienceYears,
+      clinicId,
+      schedule,
+      avgConsultationTime,
+      currentSpeedFactor,
+      isQueueActive,
+      currentPatientId,
+      supportsTeleconsultation,
+      maxPatientsPerDay,
+      consultationFee,
+      rating,
+      totalConsultations,
+      isActive,
+    });
+
+    return res.status(201).json({
       message: "Doctor created successfully",
       doctor,
     });
   } catch (error) {
-    res.status(400).json({ message: error.message });
+    return res.status(400).json({
+      message: error.message || "Failed to create doctor",
+    });
   }
 };
 
@@ -62,7 +118,6 @@ export const getDataUserId = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
-
 
 export const deleteDoctor = async (req, res) => {
   try {
